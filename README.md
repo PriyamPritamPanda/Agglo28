@@ -53,19 +53,5 @@ Ecopolis is an AI-powered tool designed to assist urban planners in making decis
 - Python 3.8 or higher
 - pip (Python package manager)
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/ecopolis.git
-   cd ecopolis
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run the application:
-   ```bash
-   python app.py
-   ```
 ---
 
