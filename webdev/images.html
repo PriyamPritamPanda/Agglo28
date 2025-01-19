@@ -21,9 +21,9 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        h1 {
+        h1, h2 {
             color: #333;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .form-group {
@@ -114,6 +114,52 @@
             color: #666;
             margin-top: 5px;
         }
+
+        /* New styles for JSON display */
+        .json-display {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .data-section {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .data-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .data-item {
+            display: flex;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background-color: white;
+            border-radius: 4px;
+        }
+
+        .data-label {
+            font-weight: bold;
+            min-width: 200px;
+            color: #34495e;
+        }
+
+        .data-value {
+            color: #576574;
+        }
+
+        .suggestions-text {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            color: #2c3e50;
+            background-color: white;
+            padding: 1rem;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -142,6 +188,31 @@
             <div id="timer" class="timer">Time elapsed: 0:00</div>
         </div>
         <div id="responseMessage"></div>
+        
+        <!-- New JSON display section -->
+        <div id="jsonDisplay" class="json-display">
+            <h2>Analysis Results</h2>
+            <div class="data-section">
+                <h3>Risk Assessment</h3>
+                <div id="riskScores"></div>
+            </div>
+            <div class="data-section">
+                <h3>Climate Data Comparison</h3>
+                <div id="climateData"></div>
+            </div>
+            <div class="data-section">
+                <h3>Vegetation Analysis</h3>
+                <div id="vegetationData"></div>
+            </div>
+            <div class="data-section">
+                <h3>Climate Changes</h3>
+                <div id="climateChanges"></div>
+            </div>
+            <div class="data-section">
+                <h3>Recommendations</h3>
+                <div id="suggestions" class="suggestions-text"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -155,6 +226,7 @@
         const loading = document.getElementById('loading');
         const responseMessage = document.getElementById('responseMessage');
         const timerElement = document.getElementById('timer');
+        const jsonDisplay = document.getElementById('jsonDisplay');
 
         let uploadTimer;
         let startTime;
@@ -163,7 +235,7 @@
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
-            timerElement.textContent = `Time elapsed: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            timerElement.textContent = Time elapsed: ${minutes}:${seconds.toString().padStart(2, '0')};
         }
 
         function previewImage(file, previewElement) {
@@ -175,6 +247,68 @@
                 }
                 reader.readAsDataURL(file);
             }
+        }
+
+        function formatValue(value) {
+            return typeof value === 'number' ? value.toFixed(2) : value;
+        }
+
+        function createDataItem(label, value) {
+            return `
+                <div class="data-item">
+                    <span class="data-label">${label}:</span>
+                    <span class="data-value">${formatValue(value)}</span>
+                </div>
+            `;
+        }
+
+        function displayJsonResponse(data) {
+            jsonDisplay.style.display = 'block';
+
+            // Risk Assessment
+            document.getElementById('riskScores').innerHTML = `
+                ${createDataItem('Biodiversity Risk Score', data.biodiversity_risk_score)}
+                ${createDataItem('Land Vegetation Ratio (LVR)', data.lvr)}
+            `;
+
+            // Climate Data
+            document.getElementById('climateData').innerHTML = `
+                <div class="data-item">
+                    <span class="data-label">Pre-Climate Data:</span>
+                    <span class="data-value">
+                        Temperature: ${formatValue(data.pre_climate_data.temperature)}°C, 
+                        Humidity: ${formatValue(data.pre_climate_data.humidity)}%, 
+                        Rain: ${formatValue(data.pre_climate_data.rain)}mm, 
+                        Wind: ${formatValue(data.pre_climate_data.wind)}m/s
+                    </span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Post-Climate Data:</span>
+                    <span class="data-value">
+                        Temperature: ${formatValue(data.post_climate_data.temperature)}°C, 
+                        Humidity: ${formatValue(data.post_climate_data.humidity)}%, 
+                        Rain: ${formatValue(data.post_climate_data.rain)}mm, 
+                        Wind: ${formatValue(data.post_climate_data.wind)}m/s
+                    </span>
+                </div>
+            `;
+
+            // Vegetation Analysis
+            document.getElementById('vegetationData').innerHTML = `
+                ${createDataItem('Pre-Vegetation Percentage', data.vegetative_percentage.pre)}
+                ${createDataItem('Post-Vegetation Percentage', data.vegetative_percentage.post)}
+            `;
+
+            // Climate Changes
+            document.getElementById('climateChanges').innerHTML = `
+                ${createDataItem('Temperature Change', data.differences.temperature)}
+                ${createDataItem('Humidity Change', data.differences.humidity)}
+                ${createDataItem('Rain Change', data.differences.rain)}
+                ${createDataItem('Wind Change', data.differences.wind)}
+            `;
+
+            // Suggestions
+            document.getElementById('suggestions').textContent = data.suggestions;
         }
 
         fileInput1.addEventListener('change', () => previewImage(fileInput1.files[0], preview1));
@@ -200,6 +334,7 @@
             submitButton.disabled = true;
             loading.style.display = 'block';
             responseMessage.textContent = '';
+            jsonDisplay.style.display = 'none';
             startTime = Date.now();
             uploadTimer = setInterval(updateTimer, 1000);
 
@@ -217,15 +352,16 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showMessage(`Files uploaded successfully! ${JSON.stringify(result)}`, 'success');
+                    showMessage('Files uploaded successfully!', 'success');
+                    displayJsonResponse(result);
                     uploadForm.reset();
                     preview1.style.display = 'none';
                     preview2.style.display = 'none';
                 } else {
-                    showMessage(`Error uploading files: ${JSON.stringify(result)}`, 'error');
+                    showMessage(Error uploading files: ${JSON.stringify(result)}, 'error');
                 }
             } catch (error) {
-                showMessage(`Network error: ${error.message}. Please check your connection and try again.`, 'error');
+                showMessage(Network error: ${error.message}. Please check your connection and try again., 'error');
             } finally {
                 submitButton.disabled = false;
                 loading.style.display = 'none';
@@ -234,7 +370,7 @@
         });
 
         function showMessage(message, type) {
-            responseMessage.className = `message ${type}`;
+            responseMessage.className = message ${type};
             responseMessage.textContent = message;
         }
     </script>
